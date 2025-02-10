@@ -1,0 +1,77 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+
+# Define intersections from the table as (X, Y) coordinates
+intersections = {
+    (452, 29): "Aquatic Ave. & Beak St.",
+    (305, 29): "Aquatic Ave. & Feather St.",
+    (129, 29): "Aquatic Ave. & Waddle Way",
+    (213, 29): "Aquatic Ave. & Waterfoul Way",
+    (284, 393): "Breadcrumb Ave. & The Circle",
+    (181, 459): "Breadcrumb Ave. & Waddle Way",
+    (305, 466): "The Circle & Feather St.",
+    (273, 307): "The Circle & Waterfoul Way",
+    (452, 293): "Dabbler Dr. & Beak St.",
+    (350, 324): "Dabbler Dr. & The Circle",
+    (585, 293): "Dabbler Dr. & Mallard St.",
+    (452, 402): "Drake Dr. & Beak St.",
+    (576, 354): "Drake Dr. & Mallard St.",
+    (452, 474): "Duckling Dr. & Beak St.",
+    (593, 354): "Duckling Dr. & Mallard St.",
+    (452, 135): "Migration Ave. & Beak St.",
+    (305, 135): "Migration Ave. & Feather St.",
+    (585, 135): "Migration Ave. & Mallard St.",
+    (29, 135): "Migration Ave. & Quack St.",
+    (129, 135): "Migration Ave. & Waddle Way",
+    (213, 135): "Migration Ave. & Waterfoul Way",
+    (452, 233): "Pondside Ave. & Beak St.",
+    (305, 233): "Pondside Ave. & Feather St.",
+    (585, 233): "Pondside Ave. & Mallard St.",
+    (28, 329): "Pondside Ave. & Quack St.",
+    (214, 241): "Pondside Ave. & Waterfoul Way",
+    (157, 266): "Pondside Ave. & Waddle Way",
+    (452, 465): "Tail Ave. & Beak St.",
+    (335, 387): "Tail Ave. & The Circle"
+}
+
+# Create graph
+G = nx.Graph()
+for (x, y), name in intersections.items():
+    G.add_node((x, y), label=name)
+
+# Add edges based on the horizontal and vertical roads
+edges = [
+    # ((452, 29), (305, 29)),
+    # ((305, 29), (129, 29)),
+    # ((129, 29), (213, 29)),
+    # ((284, 393), (181, 459)),
+    # ((181, 459), (305, 466)),
+    # ((305, 466), (273, 307)),
+    # ((273, 307), (452, 293)),
+    # ((452, 293), (350, 324)),
+    # ((350, 324), (585, 293)),
+    # ((452, 402), (576, 354)),
+    # ((576, 354), (452, 474)),
+    # ((452, 474), (593, 354)),
+    # ((452, 135), (305, 135)),
+    # ((305, 135), (585, 135)),
+    # ((585, 135), (29, 135)),
+    # ((29, 135), (129, 135)),
+    # ((129, 135), (213, 135)),
+    # ((452, 233), (305, 233)),
+    # ((305, 233), (585, 233)),
+    # ((28, 329), (214, 241)),
+    # ((214, 241), (157, 266)),
+    # ((452, 465), (335, 387))
+]
+
+G.add_edges_from(edges)
+
+# Draw graph
+plt.figure(figsize=(10, 8))
+pos = {node: node for node in G.nodes()}  # Node positions are their coordinates
+labels = nx.get_node_attributes(G, 'label')
+nx.draw(G, pos, with_labels=False, node_color='lightblue', edge_color='gray', node_size=300)
+nx.draw_networkx_labels(G, pos, labels, font_size=8)
+plt.title("Street Graph Visualization")
+plt.show()
