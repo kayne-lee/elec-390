@@ -113,9 +113,10 @@ edges = [
 ]
 
 for u, v in edges:
-    weight = euclidean_distance(u, v)
-    if (u, v) in levels:
-        weight = weight * levels[(u, v)]
+    distance = euclidean_distance(u, v)
+    level = levels.get((u, v), 1)  # Default level is 1 if not specified
+    weight = distance * level  # Weight is distance multiplied by pedestrian level
+    G.add_edge(u, v, weight=round(weight, 2))
 
     G.add_edge(u, v, weight=weight)
 
@@ -123,8 +124,42 @@ for u, v in edges:
 pos = {node: node for node in G.nodes()}  # Position nodes by their coordinates
 labels = nx.get_edge_attributes(G, 'weight')  # Get edge weights
 
-plt.figure(figsize=(8, 8))
-nx.draw(G, pos, with_labels=True, node_size=300, node_color="lightblue", font_size=8, edge_color="gray")
-nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=8)
 
-plt.show()
+# VISUALIZE GRAPH
+# plt.figure(figsize=(8, 8))
+# nx.draw(G, pos, with_labels=True, node_size=300, node_color="lightblue", font_size=8, edge_color="gray")
+# nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=8)
+
+# plt.show()
+
+def find_shortest_path(start, end):
+    """Finds and visualizes the shortest path using Dijkstra's algorithm."""
+    # Compute shortest path
+    shortest_path = nx.shortest_path(G, source=start, target=end, weight='weight', method='dijkstra')
+    print("Shortest Path:", shortest_path)
+    # Get edge list for shortest path
+    path_edges = list(zip(shortest_path, shortest_path[1:]))
+
+    # Draw graph
+    plt.figure(figsize=(10, 6))
+    pos = {node: node for node in G.nodes()}  # Use coordinates as positions
+    labels = {node: intersections[node] for node in intersections}  # Use intersection names
+
+    # Draw all edges
+    nx.draw(G, pos, node_size=300, node_color="lightgray", with_labels=False, edge_color="gray", width=1)
+    
+    # Draw shortest path edges
+    nx.draw_networkx_edges(G, pos, edgelist=path_edges, edge_color="red", width=2)
+
+    # Draw nodes with names
+    for node, (x, y) in pos.items():
+        plt.text(x, y, labels.get(node, ""), fontsize=8, ha="right", va="bottom", color="black")
+
+    # Show plot
+    plt.title(f"Shortest Path from {intersections[start]} to {intersections[end]}")
+    plt.show()
+
+# Example usage
+start = (181, 459)  # Example start node
+end = (452, 474)    # Example end node
+find_shortest_path(start, end)
