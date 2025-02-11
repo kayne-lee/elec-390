@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 model = YOLO('best.pt')
 
 # Define the directory containing the images to be checked
-image_dir = 'Screenshot 2025-02-04 at 4.10.45 PM.png'
+image_dir = 'test.png'
 
 # Function to process a single image and show results
 def check_image(image_path):
@@ -29,14 +29,4 @@ def check_image(image_path):
     plt.title(f"Predictions for {os.path.basename(image_path)}")
     plt.axis('off')  # Hide axis
     plt.show()
-
-# If you want to check multiple images in a directory
-def check_images_in_directory(image_dir):
-    # Iterate through each image in the directory
-    for file in os.listdir(image_dir):
-        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-            image_path = os.path.join(image_dir, file)
-            check_image(image_path)  # Process and display each image
-
-# Call the function to process images in the directory
-check_images_in_directory(image_dir)
+check_image(image_dir)

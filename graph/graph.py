@@ -143,7 +143,7 @@ def find_shortest_path(start, end):
     # Draw graph
     plt.figure(figsize=(10, 6))
     pos = {node: node for node in G.nodes()}  # Use coordinates as positions
-    labels = {node: intersections[node] for node in intersections}  # Use intersection names
+    labels = {node: node for node in intersections}  # Use intersection names
 
     # Draw all edges
     nx.draw(G, pos, node_size=300, node_color="lightgray", with_labels=False, edge_color="gray", width=1)
@@ -160,6 +160,6 @@ def find_shortest_path(start, end):
     plt.show()
 
 # Example usage
-start = (181, 459)  # Example start node
-end = (452, 474)    # Example end node
+start = (305, 29)  # Example start node
+end = (157, 266)    # Example end node
 find_shortest_path(start, end)
