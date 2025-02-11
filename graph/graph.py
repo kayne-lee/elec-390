@@ -1,5 +1,10 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import math
+
+def euclidean_distance(node1, node2):
+    return round(math.sqrt((node1[0] - node2[0]) ** 2 + (node1[1] - node2[1]) ** 2), 2)
+
 
 unknown = 266
 # Define intersections from the table as (X, Y) coordinates
@@ -33,6 +38,21 @@ intersections = {
     (157, 266): "Pondside Ave. & Waddle Way",
     (452, 465): "Tail Ave. & Beak St.",
     (335, 387): "Tail Ave. & The Circle"
+}
+
+levels = {
+    ((181, 459), (157, 266)): 2,
+    ((28, 329), (157, 266)): 2,
+    ((157, 266), (28, 329)): 2,
+    ((305, 233), (452, 233)): 2,
+    ((452, 233), (305, 233)): 2,
+    ((29, 135), (129, 135)): 3,
+    ((129, 135), (29, 135)): 3,
+    ((129, 135), (213, 135)): 3,
+    ((213, 135), (129, 135)): 3,
+    ((213, 135), (305, 135)): 3,
+    ((305, 135), (213, 135)): 3,
+    
 }
 
 # Create graph
@@ -84,25 +104,27 @@ edges = [
     ((350, 324), (335, 387)),
     ((335, 387), (284, 393)),
     ((284, 393), (273, 307)),
-    ((425, 293), (350, 324)),
+    ((452, 293), (350, 324)),
     ((585, 293), (452, 293)),
     ((585, 293), (593, 354)),
     ((576, 354), (585, 293)),
     ((452, 402), (576, 354)),
     ((593, 354), (452, 474)),
-    
-
 ]
 
+for u, v in edges:
+    weight = euclidean_distance(u, v)
+    if (u, v) in levels:
+        weight = weight * levels[(u, v)]
 
-G.add_edges_from(edges)
-
-# Draw graph
-
-G.add_edges_from(edges)
+    G.add_edge(u, v, weight=weight)
 
 # Draw the graph
-plt.figure(figsize=(10, 10))
-pos = {node: node for node in G.nodes()}
-nx.draw(G, pos, with_labels=True, node_size=300, font_size=8)
+pos = {node: node for node in G.nodes()}  # Position nodes by their coordinates
+labels = nx.get_edge_attributes(G, 'weight')  # Get edge weights
+
+plt.figure(figsize=(8, 8))
+nx.draw(G, pos, with_labels=True, node_size=300, node_color="lightblue", font_size=8, edge_color="gray")
+nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=8)
+
 plt.show()
