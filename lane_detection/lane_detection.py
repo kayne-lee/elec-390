@@ -2,7 +2,11 @@ import cv2
 import numpy as np
 import math
 import time
-from ultralytics import YOLO  # YOLOv8 module
+
+# Global variables to track previous lane lines
+prev_left_line = None
+prev_right_line = None
+smooth_factor = 0.8  # 80% previous, 20% current
 
 # Function to mask out the region of interest
 def region_of_interest(img, vertices):
@@ -31,6 +35,8 @@ def draw_lane_lines(img, left_line, right_line, color=[0, 255, 0], thickness=10)
 
 # The lane detection pipeline
 def pipeline(image):
+    global prev_left_line, prev_right_line
+    
     height = image.shape[0]
     width = image.shape[1]
     region_of_interest_vertices = [
@@ -41,7 +47,12 @@ def pipeline(image):
 
     # Convert to grayscale and apply Canny edge detection
     gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    cannyed_image = cv2.Canny(gray_image, 100, 200)
+    
+    # Apply Gaussian blur to reduce noise before edge detection
+    blurred = cv2.GaussianBlur(gray_image, (5, 5), 0)
+    
+    # Use adaptive thresholding for better handling of lighting variations
+    cannyed_image = cv2.Canny(blurred, 50, 150)
 
     # Mask out the region of interest
     cropped_image = region_of_interest(
@@ -67,6 +78,9 @@ def pipeline(image):
     right_line_y = []
 
     if lines is None:
+        # If no lines detected, use previous lines if available
+        if prev_left_line is not None and prev_right_line is not None:
+            return draw_lane_lines(image, prev_left_line, prev_right_line)
         return image
 
     for line in lines:
@@ -81,23 +95,59 @@ def pipeline(image):
                 right_line_x.extend([x1, x2])
                 right_line_y.extend([y1, y2])
 
-    # Fit a linear polynomial to the left and right lines
+    # Fit a quadratic polynomial for curved lanes
     min_y = int(image.shape[0] * (3 / 5))  # Slightly below the middle of the image
     max_y = image.shape[0]  # Bottom of the image
 
-    if left_line_x and left_line_y:
-        poly_left = np.poly1d(np.polyfit(left_line_y, left_line_x, deg=1))
-        left_x_start = int(poly_left(max_y))
-        left_x_end = int(poly_left(min_y))
+    # Try to detect and handle the left lane
+    if len(left_line_x) > 1 and len(left_line_y) > 1:
+        if len(left_line_x) >= 5:  # If enough points, fit quadratic curve
+            poly_left = np.poly1d(np.polyfit(left_line_y, left_line_x, deg=2))
+            left_x_start = int(poly_left(max_y))
+            left_x_end = int(poly_left(min_y))
+        else:  # Otherwise, fit linear
+            poly_left = np.poly1d(np.polyfit(left_line_y, left_line_x, deg=1))
+            left_x_start = int(poly_left(max_y))
+            left_x_end = int(poly_left(min_y))
+        
+        # Apply smoothing if we have previous lines
+        if prev_left_line is not None:
+            left_x_start = int(smooth_factor * prev_left_line[0] + (1-smooth_factor) * left_x_start)
+            left_x_end = int(smooth_factor * prev_left_line[2] + (1-smooth_factor) * left_x_end)
     else:
-        left_x_start, left_x_end = 0, 0  # Defaults if no lines detected
+        # Use previous line if available, otherwise default
+        if prev_left_line is not None:
+            left_x_start, _, left_x_end, _ = prev_left_line
+        else:
+            left_x_start, left_x_end = 0, 0
 
-    if right_line_x and right_line_y:
-        poly_right = np.poly1d(np.polyfit(right_line_y, right_line_x, deg=1))
-        right_x_start = int(poly_right(max_y))
-        right_x_end = int(poly_right(min_y))
+    # Try to detect and handle the right lane (similar logic)
+    if len(right_line_x) > 1 and len(right_line_y) > 1:
+        if len(right_line_x) >= 5:  # If enough points, fit quadratic curve
+            poly_right = np.poly1d(np.polyfit(right_line_y, right_line_x, deg=2))
+            right_x_start = int(poly_right(max_y))
+            right_x_end = int(poly_right(min_y))
+        else:  # Otherwise, fit linear
+            poly_right = np.poly1d(np.polyfit(right_line_y, right_line_x, deg=1))
+            right_x_start = int(poly_right(max_y))
+            right_x_end = int(poly_right(min_y))
+        
+        # Apply smoothing if we have previous lines
+        if prev_right_line is not None:
+            right_x_start = int(smooth_factor * prev_right_line[0] + (1-smooth_factor) * right_x_start)
+            right_x_end = int(smooth_factor * prev_right_line[2] + (1-smooth_factor) * right_x_end)
     else:
-        right_x_start, right_x_end = 0, 0  # Defaults if no lines detected
+        # Use previous line if available, otherwise default
+        if prev_right_line is not None:
+            right_x_start, _, right_x_end, _ = prev_right_line
+        else:
+            right_x_start, right_x_end = width, width
+
+    # Save current lines for next frame
+    if left_x_start != 0 and left_x_end != 0:
+        prev_left_line = [left_x_start, max_y, left_x_end, min_y]
+    if right_x_start != width and right_x_end != width:
+        prev_right_line = [right_x_start, max_y, right_x_end, min_y]
 
     # Create the filled polygon between the left and right lane lines
     lane_image = draw_lane_lines(
@@ -135,6 +185,10 @@ def process_video():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
+    # Optional: create video writer for saving the processed video
+    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    # out = cv2.VideoWriter('output.avi', fourcc, target_fps, (1280, 720))
+
     # Loop through each frame
     while cap.isOpened():
         ret, frame = cap.read()
@@ -148,6 +202,9 @@ def process_video():
         # Run the lane detection pipeline
         lane_frame = pipeline(resized_frame)
 
+        # Optional: write the frame to output video
+        # out.write(lane_frame)
+
         # Display the resulting frame with both lane detection and car detection
         cv2.imshow('Lane and Car Detection', lane_frame)
 
@@ -160,7 +217,9 @@ def process_video():
 
     # Release video capture and close windows
     cap.release()
+    # out.release()  # Uncomment if using VideoWriter
     cv2.destroyAllWindows()
 
 # Run the video processing function
-process_video()
+if __name__ == "__main__":
+    process_video()
