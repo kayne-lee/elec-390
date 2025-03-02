@@ -66,5 +66,6 @@ def process_video(input_video):
     cv2.destroyAllWindows()
 
 # Example usage
-input_video = "video/sr.mp4"  # Replace with the path to your video file
+# input_video = "video/sr.mp4"  # Replace with the path to your video file
+input_video = "test/test2.mp4"
 process_video(input_video)
