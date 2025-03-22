@@ -17,46 +17,50 @@ pwm_p5.prescaler(1)
 pwm_p4.period(100)
 pwm_p5.period(100)
 
-# Create an event to signal the threads to stop.
+# Create events to control blinking.
 exit_event = threading.Event()
+start_event = threading.Event()
 
-def flash_led(pwm, interval, exit_event):
-    """
-    Toggles the LED connected to the given PWM channel.
-    Every 'interval' seconds, the duty cycle is toggled between 0% and 100%.
-    The loop will exit when exit_event is set.
-    """
-    state = False  # Start with LED off.
+def flash_led(pwm, interval):
+    """Toggles the LED based on the start event signal."""
     while not exit_event.is_set():
-        state = not state  # Toggle state.
-        if state:
-            pwm.pulse_width_percent(100)  # Turn LED on.
-        else:
-            pwm.pulse_width_percent(0)    # Turn LED off.
-        time.sleep(interval)
+        start_event.wait()  # Wait for start signal
+        state = False
+        while start_event.is_set() and not exit_event.is_set():
+            state = not state
+            pwm.pulse_width_percent(100 if state else 0)
+            time.sleep(interval)
+        pwm.pulse_width_percent(0)  # Ensure LED turns off when stopped
 
-# Create threads for each LED flash routine.
-thread_p4 = threading.Thread(target=flash_led, args=(pwm_p4, 0.25, exit_event))
-thread_p5 = threading.Thread(target=flash_led, args=(pwm_p5, 0.5, exit_event))
+# Create threads for LEDs
+thread_p4 = threading.Thread(target=flash_led, args=(pwm_p4, 0.25))
+thread_p5 = threading.Thread(target=flash_led, args=(pwm_p5, 0.5))
 
-# Start the flashing threads.
+# Start threads
 thread_p4.start()
 thread_p5.start()
 
-print("LED on P4 is flashing every 0.25 seconds and LED on P5 every 0.5 seconds.")
-print("Press Ctrl+C to exit.")
+def start_blinking():
+    """Start blinking LEDs."""
+    print("Starting LED blinking...")
+    start_event.set()
 
-try:
-    # Keep the main thread alive while the LED threads run.
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    print("\nKeyboardInterrupt received. Exiting gracefully...")
-    exit_event.set()  # Signal the threads to exit.
-    thread_p4.join()  # Wait for the threads to finish.
+def stop_blinking():
+    """Stop blinking LEDs."""
+    print("Stopping LED blinking...")
+    start_event.clear()
+
+def shutdown():
+    """Gracefully stop all threads and turn off LEDs."""
+    print("Shutting down LED controller...")
+    stop_blinking()
+    exit_event.set()
+    thread_p4.join()
     thread_p5.join()
-finally:
-    # Ensure both LEDs are turned off.
     pwm_p4.pulse_width_percent(0)
     pwm_p5.pulse_width_percent(0)
-    print("Both LEDs have been turned off.")
+    print("Both LEDs are turned off.")
+
+# Prevent script from exiting immediately when imported
+if __name__ == "__main__":
+    print("LED Controller is running. Call start_blinking(), stop_blinking(), and shutdown() from another script.")
