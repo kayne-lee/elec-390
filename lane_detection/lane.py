@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 
 # Function to detect right lane
 def detect_right_lane(frame):
@@ -12,15 +13,18 @@ def detect_right_lane(frame):
     # Canny edge detection
     edges = cv2.Canny(blurred, 50, 150)
     
-    # Define the region of interest (ROI) to focus on lower part of the frame
+    # Define the region of interest (ROI) to focus on the right lane
     height, width = edges.shape
     mask = np.zeros_like(edges)
+
+    # Adjusted ROI to avoid right-side false detection
     polygon = np.array([[
-        (int(width * 0.5), height),
+        (int(width * 0.55), height),
+        (int(width * 0.75), int(height * 0.6)),
         (int(width * 0.9), int(height * 0.6)),
-        (width, int(height * 0.6)),
-        (width, height)
+        (int(width * 0.95), height)
     ]], np.int32)
+
     cv2.fillPoly(mask, polygon, 255)
     
     # Mask the edges image to focus on the region of interest
@@ -40,8 +44,12 @@ def draw_lanes(frame, lines):
 
 # Main function to process the video
 def process_video(input_video):
-    # Open the video
     cap = cv2.VideoCapture(input_video)
+
+    # Get FPS of video to time coordinate printing
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_interval = int(fps * 0.25)  # Every 0.25 seconds
+    frame_count = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -50,22 +58,30 @@ def process_video(input_video):
         
         # Detect the right lane in the frame
         lines = detect_right_lane(frame)
-        
+
+        # Print lane coordinates every 0.25 seconds
+        if frame_count % frame_interval == 0 and lines is not None:
+            print(f"Lane Coordinates at {round(frame_count / fps, 2)} sec:")
+            for line in lines:
+                for x1, y1, x2, y2 in line:
+                    print(f"  ({x1}, {y1}) -> ({x2}, {y2})")
+
         # Draw the detected lanes on the frame
         draw_lanes(frame, lines)
-        
+
         # Display the frame
         cv2.imshow("Lane Detection", frame)
+
+        frame_count += 1
 
         # Press 'q' to quit
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     
-    # Release the video capture object and close all OpenCV windows
     cap.release()
     cv2.destroyAllWindows()
 
 # Example usage
-# input_video = "video/sr.mp4"  # Replace with the path to your video file
-input_video = "test/test2.mp4"
+input_video = "video/still.mp4"
 process_video(input_video)
+

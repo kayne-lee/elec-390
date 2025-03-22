@@ -1,32 +1,44 @@
-import os
 import cv2
+import torch
 from ultralytics import YOLO
-import matplotlib.pyplot as plt
 
-# Load your trained YOLO model (change the path to your model)
-model = YOLO('best.pt')
+# Load your trained YOLOv8 model
+model = YOLO("best (4).pt")
 
-# Define the directory containing the images to be checked
-image_dir = 'test.png'
+# Open webcam (0 = default camera, change if you have multiple cameras)
+cap = cv2.VideoCapture(0)
 
-# Function to process a single image and show results
-def check_image(image_path):
-    # Read the image
-    img = cv2.imread(image_path)
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
+# Set camera width & height
+cap.set(3, 640)  # Width
+cap.set(4, 480)  # Height
 
-    # Make predictions on the image
-    results = model(img)  # Run the model on the image
-    
-    # Print results
-    print(f"Results for {image_path}: {results}")
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-    # Draw bounding boxes on the image
-    annotated_img = results[0].plot()  # Annotate the image with detected boxes
+    # Run YOLO model on the frame
+    results = model(frame)
 
-    # Display the image with matplotlib
-    plt.imshow(annotated_img)
-    plt.title(f"Predictions for {os.path.basename(image_path)}")
-    plt.axis('off')  # Hide axis
-    plt.show()
-check_image(image_dir)
+    # Draw detections on the frame
+    for result in results:
+        for box in result.boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box coordinates
+            conf = box.conf[0].item()  # Confidence score
+            cls = int(box.cls[0].item())  # Class ID
+            
+            # Draw rectangle & label
+            label = f"{model.names[cls]} {conf:.2f}"
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+    # Show annotated frame
+    cv2.imshow("YOLOv8 Real-Time Detection", frame)
+
+    # Press 'q' to exit
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+# Release resources
+cap.release()
+cv2.destroyAllWindows()
