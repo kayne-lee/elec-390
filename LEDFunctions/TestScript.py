@@ -1,17 +1,41 @@
+#!/usr/bin/env python3
 import time
-import led_controller  # Import the module
 
-# Start blinking LEDs
-led_controller.start_blinking()
-time.sleep(5)  # Let them blink for 5 seconds
+# Import your signal and brake light control functions.
+# Adjust the import paths if the modules are in separate files.
+from BlinkingLEDs import signal_left, signal_right, stop_signaling, shutdown as signal_shutdown
+from BrakeLEDs import toggle_brake_lights, shutdown as brake_shutdown
 
-# Stop blinking LEDs
-led_controller.stop_blinking()
-time.sleep(3)  # Keep LEDs off for 3 seconds
+def test_vehicle_lighting():
+    print("🚗 Starting vehicle lighting test...")
 
-# Restart blinking
-led_controller.start_blinking()
-time.sleep(5)
+    print("\n🔁 Testing LEFT turn signal for 5 seconds:")
+    signal_left()
+    time.sleep(5)
+    stop_signaling()
 
-# Stop blinking and exit
-led_controller.shutdown()
+    time.sleep(1)
+
+    print("\n🛑 Testing BRAKE lights toggle ON:")
+    toggle_brake_lights()
+    time.sleep(2)
+
+    print("🛑 Testing BRAKE lights toggle OFF:")
+    toggle_brake_lights()
+    time.sleep(1)
+
+    print("\n🔁 Testing RIGHT turn signal for 5 seconds:")
+    signal_right()
+    time.sleep(5)
+    stop_signaling()
+
+    time.sleep(1)
+
+    print("\n🧹 Shutting down systems...")
+    signal_shutdown()
+    brake_shutdown()
+
+    print("✅ Test complete.")
+
+if __name__ == "__main__":
+    test_vehicle_lighting()
