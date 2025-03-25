@@ -9,8 +9,8 @@ from robot_hat import PWM
 import time
 
 # Setup PWM for both brake lights
-pwm_brake_left = PWM('P2')
-pwm_brake_right = PWM('P3')
+pwm_brake_left = PWM('P6')
+pwm_brake_right = PWM('P7')
 
 # Configure both PWM channels
 for pwm in [pwm_brake_left, pwm_brake_right]:
