@@ -3,12 +3,12 @@ from robot_hat import PWM, Pin
 import time
 
 # Setup
-led = PWM('P1')           # PWM1 - LED pin
+led = PWM('P8')           # PWM8 - LED pin
 led.freq(50)
 led.prescaler(1)
 led.period(100)
 
-button = Pin('D2')        # Button pin
+button = Pin('D0')        # Button pin
 button.mode(Pin.IN)
 button.pull(Pin.PULL_UP)  # Assumes button connects to GND when pressed
 
