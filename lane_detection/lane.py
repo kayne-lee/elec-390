@@ -82,6 +82,6 @@ def process_video(input_video):
     cv2.destroyAllWindows()
 
 # Example usage
-input_video = "video/still.mp4"
+input_video = "lane_detection/output.mp4"
 process_video(input_video)
 
